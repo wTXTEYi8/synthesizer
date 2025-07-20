@@ -1,7 +1,8 @@
 use crate::engine::{EngineBlender, Harmonic, Operator};
+use std::collections::HashMap;
 
 // エンベロープ
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Envelope {
     pub attack: f32,   // 秒
     pub decay: f32,    // 秒
@@ -164,69 +165,96 @@ impl LowPassFilter {
     }
 }
 
-// メインシンセサイザー
-pub struct Synthesizer {
+// 個別の音声（ボイス）
+pub struct Voice {
     engine_blender: EngineBlender,
     envelope: EnvelopeGenerator,
     filter: LowPassFilter,
     frequency: f32,
-    volume: f32,
-    is_playing: bool,
+    velocity: f32,
+    note: u8,
+    is_active: bool,
 }
 
-impl Synthesizer {
-    pub fn new() -> Self {
-        let sample_rate = 44100.0;
-        
+impl Voice {
+    pub fn new(sample_rate: f32) -> Self {
         Self {
             engine_blender: EngineBlender::new(sample_rate),
             envelope: EnvelopeGenerator::new(sample_rate),
             filter: LowPassFilter::new(sample_rate),
             frequency: 440.0,
-            volume: 0.5,
-            is_playing: false,
+            velocity: 0.5,
+            note: 60,
+            is_active: false,
         }
     }
     
-    pub fn note_on(&mut self, frequency: f32) {
+    pub fn note_on(&mut self, note: u8, velocity: f32) {
+        let frequency = 440.0 * 2.0_f32.powf((note as f32 - 69.0) / 12.0);
         self.frequency = frequency;
+        self.note = note;
+        self.velocity = velocity.clamp(0.0, 1.0);
         self.engine_blender.set_frequency(frequency);
         self.envelope.note_on();
-        self.is_playing = true;
+        self.is_active = true;
     }
     
     pub fn note_off(&mut self) {
         self.envelope.note_off();
-        self.is_playing = false;
+        self.is_active = false;
     }
     
     pub fn next_sample(&mut self) -> f32 {
+        if !self.is_active {
+            return 0.0;
+        }
+        
         let raw_sample = self.engine_blender.next_sample();
         let envelope_value = self.envelope.next_sample();
         let filtered_sample = self.filter.process(raw_sample * envelope_value);
         
-        filtered_sample * self.volume
+        filtered_sample * self.velocity
+    }
+    
+    pub fn is_active(&self) -> bool {
+        self.is_active
+    }
+    
+    pub fn is_released(&self) -> bool {
+        !self.is_active && self.envelope.current_stage == EnvelopeStage::Idle
+    }
+    
+    pub fn get_note(&self) -> u8 {
+        self.note
     }
     
     // パラメータ設定
-    pub fn set_blend_ratio(&mut self, ratio: f32) {
-        self.engine_blender.set_blend_ratio(ratio);
+    pub fn set_blend(&mut self, blend: f32) {
+        self.engine_blender.set_blend_ratio(blend);
     }
     
-    pub fn set_volume(&mut self, volume: f32) {
-        self.volume = volume.clamp(0.0, 1.0);
+    pub fn set_cutoff(&mut self, cutoff: f32) {
+        self.filter.set_cutoff(cutoff * 20000.0);
     }
     
-    pub fn set_filter_cutoff(&mut self, cutoff: f32) {
-        self.filter.set_cutoff(cutoff);
-    }
-    
-    pub fn set_filter_resonance(&mut self, resonance: f32) {
+    pub fn set_resonance(&mut self, resonance: f32) {
         self.filter.set_resonance(resonance);
     }
     
-    pub fn set_envelope(&mut self, envelope: Envelope) {
-        self.envelope.set_envelope(envelope);
+    pub fn set_attack(&mut self, attack: f32) {
+        self.envelope.envelope.attack = attack;
+    }
+    
+    pub fn set_decay(&mut self, decay: f32) {
+        self.envelope.envelope.decay = decay;
+    }
+    
+    pub fn set_sustain(&mut self, sustain: f32) {
+        self.envelope.envelope.sustain = sustain;
+    }
+    
+    pub fn set_release(&mut self, release: f32) {
+        self.envelope.envelope.release = release;
     }
     
     // Additive Engine パラメータ
@@ -251,16 +279,208 @@ impl Synthesizer {
         self.engine_blender.fm_engine().set_operator_feedback(operator_index, feedback);
     }
     
+    // Volume control
+    pub fn set_volume(&mut self, volume: f32) {
+        self.velocity = volume.clamp(0.0, 1.0);
+    }
+    
+    // Envelope control
+    pub fn set_envelope(&mut self, envelope: Envelope) {
+        self.envelope.set_envelope(envelope);
+    }
+}
+
+// メインシンセサイザー
+pub struct Synthesizer {
+    pub voices: HashMap<u8, Voice>,
+    sample_rate: f32,
+    current_note: Option<u8>,
+    current_velocity: Option<f32>,
+}
+
+impl Synthesizer {
+    pub fn new() -> Self {
+        let sample_rate = 44100.0;
+        
+        Self {
+            voices: HashMap::new(),
+            sample_rate,
+            current_note: None,
+            current_velocity: None,
+        }
+    }
+    
+    pub fn note_on(&mut self, note: u8, velocity: f32) {
+        let voice = self.voices.entry(note).or_insert_with(|| Voice::new(self.sample_rate));
+        voice.note_on(note, velocity);
+        self.current_note = Some(note);
+        self.current_velocity = Some(velocity);
+    }
+    
+    pub fn note_off(&mut self, note: u8) {
+        if let Some(voice) = self.voices.get_mut(&note) {
+            voice.note_off();
+        }
+        self.current_note = None;
+        self.current_velocity = None;
+    }
+    
+    pub fn next_sample(&mut self) -> f32 {
+        let mut sample = 0.0;
+        for voice in self.voices.values_mut() {
+            sample += voice.next_sample();
+        }
+        sample / self.voices.len() as f32 // Average voices for polyphony
+    }
+    
+    // パラメータ設定
+    pub fn set_blend_ratio(&mut self, ratio: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_blend(ratio);
+        }
+    }
+    
+    pub fn set_blend(&mut self, blend: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_blend(blend);
+        }
+    }
+    
+    pub fn set_volume(&mut self, volume: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_volume(volume); // Assuming set_volume exists on Voice
+        }
+    }
+    
+    pub fn set_filter_cutoff(&mut self, cutoff: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_cutoff(cutoff);
+        }
+    }
+    
+    pub fn set_cutoff(&mut self, cutoff: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_cutoff(cutoff * 20000.0);
+        }
+    }
+    
+    pub fn set_filter_resonance(&mut self, resonance: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_resonance(resonance);
+        }
+    }
+    
+    pub fn set_resonance(&mut self, resonance: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_resonance(resonance);
+        }
+    }
+    
+    pub fn set_envelope(&mut self, envelope: Envelope) {
+        for voice in self.voices.values_mut() {
+            voice.set_envelope(envelope);
+        }
+    }
+    
+    pub fn set_attack(&mut self, attack: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_attack(attack);
+        }
+    }
+    
+    pub fn set_decay(&mut self, decay: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_decay(decay);
+        }
+    }
+    
+    pub fn set_sustain(&mut self, sustain: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_sustain(sustain);
+        }
+    }
+    
+    pub fn set_release(&mut self, release: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_release(release);
+        }
+    }
+    
+    // Additive Engine パラメータ
+    pub fn set_harmonic_amplitude(&mut self, harmonic_index: usize, amplitude: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_harmonic_amplitude(harmonic_index, amplitude);
+        }
+    }
+    
+    pub fn toggle_harmonic(&mut self, harmonic_index: usize) {
+        for voice in self.voices.values_mut() {
+            voice.toggle_harmonic(harmonic_index);
+        }
+    }
+    
+    // FM Engine パラメータ
+    pub fn set_operator_amplitude(&mut self, operator_index: usize, amplitude: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_operator_amplitude(operator_index, amplitude);
+        }
+    }
+    
+    pub fn set_operator_frequency_ratio(&mut self, operator_index: usize, ratio: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_operator_frequency_ratio(operator_index, ratio);
+        }
+    }
+    
+    pub fn set_operator_feedback(&mut self, operator_index: usize, feedback: f32) {
+        for voice in self.voices.values_mut() {
+            voice.set_operator_feedback(operator_index, feedback);
+        }
+    }
+    
     // ゲッター
     pub fn harmonics(&self) -> &[Harmonic] {
-        &self.engine_blender.additive_engine.harmonics
+        // This needs to be adapted to return harmonics from all voices
+        // For now, it will return the harmonics of the first voice
+        if let Some(voice) = self.voices.values().next() {
+            &voice.engine_blender.additive_engine.harmonics
+        } else {
+            &[]
+        }
+    }
+    
+    pub fn harmonics_count(&self) -> usize {
+        // This needs to be adapted to return the total count of harmonics across all voices
+        // For now, it will return the count of harmonics from the first voice
+        if let Some(voice) = self.voices.values().next() {
+            voice.engine_blender.additive_engine.harmonics.len()
+        } else {
+            0
+        }
     }
     
     pub fn operators(&self) -> &[Operator] {
-        &self.engine_blender.fm_engine.operators
+        // This needs to be adapted to return operators from all voices
+        // For now, it will return the operators of the first voice
+        if let Some(voice) = self.voices.values().next() {
+            &voice.engine_blender.fm_engine.operators
+        } else {
+            &[]
+        }
+    }
+    
+    pub fn operators_count(&self) -> usize {
+        // This needs to be adapted to return the total count of operators across all voices
+        // For now, it will return the count of operators from the first voice
+        if let Some(voice) = self.voices.values().next() {
+            voice.engine_blender.fm_engine.operators.len()
+        } else {
+            0
+        }
     }
     
     pub fn is_playing(&self) -> bool {
-        self.is_playing
+        // This needs to be adapted to check if any voice is active
+        self.voices.values().any(|v| v.is_active())
     }
 } 
