@@ -174,6 +174,9 @@ pub struct Voice {
     velocity: f32,
     note: u8,
     is_active: bool,
+    duration: Option<f32>,  // 持続時間（秒）
+    elapsed_time: f32,      // 経過時間
+    sample_rate: f32,       // サンプルレート
 }
 
 impl Voice {
@@ -186,6 +189,9 @@ impl Voice {
             velocity: 0.5,
             note: 60,
             is_active: false,
+            duration: None,
+            elapsed_time: 0.0,
+            sample_rate,
         }
     }
     
@@ -197,6 +203,19 @@ impl Voice {
         self.engine_blender.set_frequency(frequency);
         self.envelope.note_on();
         self.is_active = true;
+        self.elapsed_time = 0.0;
+    }
+    
+    pub fn note_on_with_duration(&mut self, note: u8, velocity: f32, duration: f32) {
+        let frequency = 440.0 * 2.0_f32.powf((note as f32 - 69.0) / 12.0);
+        self.frequency = frequency;
+        self.note = note;
+        self.velocity = velocity.clamp(0.0, 1.0);
+        self.duration = Some(duration);
+        self.engine_blender.set_frequency(frequency);
+        self.envelope.note_on();
+        self.is_active = true;
+        self.elapsed_time = 0.0;
     }
     
     pub fn note_off(&mut self) {
@@ -207,6 +226,15 @@ impl Voice {
     pub fn next_sample(&mut self) -> f32 {
         if !self.is_active {
             return 0.0;
+        }
+        
+        // 持続時間のチェック
+        if let Some(duration) = self.duration {
+            self.elapsed_time += 1.0 / self.sample_rate;
+            if self.elapsed_time >= duration {
+                self.note_off();
+                return 0.0;
+            }
         }
         
         let raw_sample = self.engine_blender.next_sample();
@@ -313,6 +341,13 @@ impl Synthesizer {
     pub fn note_on(&mut self, note: u8, velocity: f32) {
         let voice = self.voices.entry(note).or_insert_with(|| Voice::new(self.sample_rate));
         voice.note_on(note, velocity);
+        self.current_note = Some(note);
+        self.current_velocity = Some(velocity);
+    }
+    
+    pub fn note_on_with_duration(&mut self, note: u8, velocity: f32, duration: f32) {
+        let voice = self.voices.entry(note).or_insert_with(|| Voice::new(self.sample_rate));
+        voice.note_on_with_duration(note, velocity, duration);
         self.current_note = Some(note);
         self.current_velocity = Some(velocity);
     }

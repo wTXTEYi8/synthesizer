@@ -63,17 +63,23 @@ fn test_synthesizer(synth: &mut synth::Synthesizer) {
 }
 
 fn interactive_control(synth: Arc<Mutex<synth::Synthesizer>>, _audio: &mut audio::AudioOutput) {
-    println!("\n🎮 Interactive Controls:");
-    println!("Press 'n' + Enter to play Middle C");
-    println!("Press 'e' + Enter to play E note");
-    println!("Press 'g' + Enter to play G note");
-    println!("Press 'c' + Enter to play high C");
-    println!("Press 's' + Enter to stop all notes");
-    println!("Press 'q' + Enter to quit");
-    println!("Press '1-9' + Enter to change blend (1=Additive, 9=FM)");
-    println!("Press 'a' + Enter to adjust envelope");
-    println!("Press 'f' + Enter to adjust filter");
-    println!("Press 'p' + Enter to show active voices");
+    println!("\n🎮 インタラクティブ制御:");
+    println!("'n' + Enter で中央のC音を再生");
+    println!("'e' + Enter でE音を再生");
+    println!("'g' + Enter でG音を再生");
+    println!("'c' + Enter で高いC音を再生");
+    println!("'s' + Enter で全ての音を停止");
+    println!("'q' + Enter で終了");
+    println!("'1-9' + Enter でブレンド比率変更 (1=Additive, 9=FM)");
+    println!("'a' + Enter でエンベロープ調整");
+    println!("'f' + Enter でフィルター調整");
+    println!("'p' + Enter でアクティブな音を表示");
+    println!("\n⏱️  カスタム持続時間:");
+    println!("'C <秒数>' で中央のC音を指定時間再生 (例: 'C 2.5')");
+    println!("'E <秒数>' でE音を指定時間再生 (例: 'E 1.8')");
+    println!("'G <秒数>' でG音を指定時間再生 (例: 'G 0.3')");
+    println!("'H <秒数>' で高いC音を指定時間再生 (例: 'H 4.2')");
+    println!("'CHORD <秒数>' でC-E-G和音を指定時間再生 (例: 'CHORD 5.0')");
     
     loop {
         print!("> ");
@@ -82,6 +88,49 @@ fn interactive_control(synth: Arc<Mutex<synth::Synthesizer>>, _audio: &mut audio
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
         let input = input.trim();
+        
+        // カスタム持続時間の処理
+        if let Some((note, duration_str)) = parse_custom_duration(input) {
+            match duration_str.parse::<f32>() {
+                Ok(duration) if duration > 0.0 => {
+                    let mut synth = synth.lock().unwrap();
+                    match note {
+                        "C" => {
+                            synth.note_on_with_duration(60, 0.8, duration);
+                            println!("🎵 Note ON: Middle C (60) for {:.1} seconds", duration);
+                        }
+                        "E" => {
+                            synth.note_on_with_duration(64, 0.7, duration);
+                            println!("🎵 Note ON: E (64) for {:.1} seconds", duration);
+                        }
+                        "G" => {
+                            synth.note_on_with_duration(67, 0.6, duration);
+                            println!("🎵 Note ON: G (67) for {:.1} seconds", duration);
+                        }
+                        "H" => {
+                            synth.note_on_with_duration(72, 0.5, duration);
+                            println!("🎵 Note ON: High C (72) for {:.1} seconds", duration);
+                        }
+                        "CHORD" => {
+                            synth.note_on_with_duration(60, 0.8, duration);
+                            synth.note_on_with_duration(64, 0.7, duration);
+                            synth.note_on_with_duration(67, 0.6, duration);
+                            println!("🎵 Chord ON: C-E-G for {:.1} seconds", duration);
+                        }
+                        _ => {
+                            println!("❓ Unknown note: {}", note);
+                        }
+                    }
+                }
+                Ok(_) => {
+                    println!("❌ Duration must be greater than 0");
+                }
+                Err(_) => {
+                    println!("❌ Invalid duration format. Use numbers like 2.5, 1.8, etc.");
+                }
+            }
+            continue;
+        }
         
         match input {
             "n" => {
@@ -150,8 +199,18 @@ fn interactive_control(synth: Arc<Mutex<synth::Synthesizer>>, _audio: &mut audio
                 println!("🔊 Filter adjusted");
             }
             _ => {
-                println!("❓ Unknown command. Type 'n', 'e', 'g', 'c', 's', 'p', 'q', '1-9', 'a', or 'f'");
+                println!("❓ Unknown command. Type 'n', 'e', 'g', 'c', 's', 'p', 'q', '1-9', 'a', 'f', or custom duration like 'C 2.5'");
             }
         }
+    }
+}
+
+// カスタム持続時間のパース関数
+fn parse_custom_duration(input: &str) -> Option<(&str, &str)> {
+    let parts: Vec<&str> = input.split_whitespace().collect();
+    if parts.len() == 2 {
+        Some((parts[0], parts[1]))
+    } else {
+        None
     }
 }
