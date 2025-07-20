@@ -1,159 +1,159 @@
-# 🎹 Rust Synthesizer
+# 🎹 Rust シンセサイザー
 
-A real-time synthesizer built in Rust with rich sound expression using Additive + FM synthesis.
+Rustで実装されたAdditive（加算合成）とFM（周波数変調）を使用した豊かな音表現のリアルタイムシンセサイザーです。
 
-## 🎵 Features
+## 🎵 機能
 
-- **Additive Synthesis**: 64 harmonics for rich, complex tones
-- **FM Synthesis**: 6 operators for dynamic, evolving sounds
-- **Engine Blending**: Smooth crossfading between Additive and FM engines
-- **ADSR Envelope**: Attack, Decay, Sustain, Release control
-- **Low-pass Filter**: Cutoff and resonance control
-- **Real-time Audio Output**: Using cpal crate
-- **Polyphonic Support**: Multiple simultaneous notes
-- **Custom Note Duration**: Specify exact duration for each note
-- **Interactive Command-line Interface**: Japanese localized controls
+- **Additive Synthesis**: 64個の倍音による豊かで複雑な音色
+- **FM Synthesis**: 6個のオペレーターによる動的で進化する音色
+- **Engine Blending**: AdditiveとFMエンジン間のスムーズなクロスフェード
+- **ADSR Envelope**: アタック、ディケイ、サステイン、リリース制御
+- **Low-pass Filter**: カットオフとレゾナンス制御
+- **Real-time Audio Output**: cpalクレートを使用したリアルタイム音声出力
+- **Polyphonic Support**: 複数の同時音声再生
+- **Custom Note Duration**: 各音の正確な持続時間指定
+- **Interactive Command-line Interface**: 日本語ローカライズされた制御
 
-## 🎮 Interactive Controls
+## 🎮 インタラクティブ制御
 
-### Basic Note Controls (Continuous Play)
-- **`c` + Enter**: Middle C (60)
-- **`d` + Enter**: D (62)
-- **`e` + Enter**: E (64)
-- **`f` + Enter**: F (65)
-- **`g` + Enter**: G (67)
-- **`a` + Enter**: A (69)
-- **`b` + Enter**: B (71)
-- **`s` + Enter**: Stop all notes
-- **`q` + Enter**: Quit
+### 基本音声制御（継続再生）
+- **`c` + Enter**: 中央のC音 (60)
+- **`d` + Enter**: D音 (62)
+- **`e` + Enter**: E音 (64)
+- **`f` + Enter**: F音 (65)
+- **`g` + Enter**: G音 (67)
+- **`a` + Enter**: A音 (69)
+- **`b` + Enter**: B音 (71)
+- **`s` + Enter**: 全ての音を停止
+- **`q` + Enter**: 終了
 
-### Custom Duration Controls
-- **`C <seconds>`**: Middle C for specified duration (e.g., `C 2.5`)
-- **`D <seconds>`**: D for specified duration (e.g., `D 1.8`)
-- **`E <seconds>`**: E for specified duration (e.g., `E 1.8`)
-- **`F <seconds>`**: F for specified duration (e.g., `F 0.3`)
-- **`G <seconds>`**: G for specified duration (e.g., `G 0.3`)
-- **`A <seconds>`**: A for specified duration (e.g., `A 4.2`)
-- **`B <seconds>`**: B for specified duration (e.g., `B 4.2`)
-- **`H <seconds>`**: High C for specified duration (e.g., `H 4.2`)
-- **`CHORD <seconds>`**: C-E-G chord for specified duration (e.g., `CHORD 5.0`)
-- **`SCALE <seconds>`**: C-D-E-F-G-A-B-C scale for specified duration (e.g., `SCALE 8.0`)
+### カスタム持続時間制御
+- **`C <秒数>`**: 中央のC音を指定時間再生（例：`C 2.5`）
+- **`D <秒数>`**: D音を指定時間再生（例：`D 1.8`）
+- **`E <秒数>`**: E音を指定時間再生（例：`E 1.8`）
+- **`F <秒数>`**: F音を指定時間再生（例：`F 0.3`）
+- **`G <秒数>`**: G音を指定時間再生（例：`G 0.3`）
+- **`A <秒数>`**: A音を指定時間再生（例：`A 4.2`）
+- **`B <秒数>`**: B音を指定時間再生（例：`B 4.2`）
+- **`H <秒数>`**: 高いC音を指定時間再生（例：`H 4.2`）
+- **`CHORD <秒数>`**: C-E-G和音を指定時間再生（例：`CHORD 5.0`）
+- **`SCALE <秒数>`**: C-D-E-F-G-A-B-C音階を指定時間再生（例：`SCALE 8.0`）
 
-### Sound Shaping Controls
-- **`1-9` + Enter**: Blend ratio (1=Additive, 9=FM)
-- **`env` + Enter**: Adjust envelope settings
-- **`filter` + Enter**: Adjust filter settings
-- **`p` + Enter**: Show active voices
+### 音色調整制御
+- **`1-9` + Enter**: ブレンド比率（1=Additive、9=FM）
+- **`env` + Enter**: エンベロープ設定調整
+- **`filter` + Enter**: フィルター設定調整
+- **`p` + Enter**: アクティブな音声を表示
 
-## 🎼 Musical Scale
+## 🎼 音階
 
-The synthesizer supports a complete octave:
+シンセサイザーは完全な1オクターブをサポートします：
 ```
 C (60) - D (62) - E (64) - F (65) - G (67) - A (69) - B (71)
 ```
 
-## 🚀 Getting Started
+## 🚀 セットアップ
 
-### Prerequisites
-- Rust (latest stable version)
-- Visual Studio Build Tools (Windows)
+### 前提条件
+- Rust（最新の安定版）
+- Visual Studio Build Tools（Windows）
 
-### Installation
-1. Clone the repository:
+### インストール
+1. リポジトリをクローン：
 ```bash
 git clone <repository-url>
 cd synthesizer
 ```
 
-2. Build and run:
+2. ビルドと実行：
 ```bash
 cargo run
 ```
 
-### Usage Examples
+### 使用例
 
-#### Playing a Scale
+#### 音階の演奏
 ```
-> c    ← Start C
-> d    ← Add D
-> e    ← Add E
-> f    ← Add F
-> g    ← Add G
-> a    ← Add A
-> b    ← Add B
-```
-
-#### Custom Duration
-```
-> C 2.5    ← Play C for 2.5 seconds
-> D 1.8    ← Play D for 1.8 seconds
-> CHORD 5.0 ← Play C-E-G chord for 5 seconds
-> SCALE 8.0 ← Play complete scale for 8 seconds
+> c    ← C音開始
+> d    ← D音追加
+> e    ← E音追加
+> f    ← F音追加
+> g    ← G音追加
+> a    ← A音追加
+> b    ← B音追加
 ```
 
-#### Sound Shaping
+#### カスタム持続時間
 ```
-> 1        ← Pure Additive synthesis
-> 9        ← Pure FM synthesis
-> 5        ← 50/50 blend
-> env      ← Adjust envelope
-> filter   ← Adjust filter
+> C 2.5    ← C音を2.5秒間再生
+> D 1.8    ← D音を1.8秒間再生
+> CHORD 5.0 ← C-E-G和音を5秒間再生
+> SCALE 8.0 ← 完全な音階を8秒間再生
 ```
 
-## 🏗️ Architecture
+#### 音色調整
+```
+> 1        ← 純粋なAdditive合成
+> 9        ← 純粋なFM合成
+> 5        ← 50/50ブレンド
+> env      ← エンベロープ調整
+> filter   ← フィルター調整
+```
 
-- **`src/main.rs`**: Interactive command-line interface
-- **`src/synth.rs`**: Main synthesizer with polyphonic voice management
-- **`src/engine.rs`**: Additive and FM synthesis engines
-- **`src/audio.rs`**: Real-time audio output using cpal
+## 🏗️ アーキテクチャ
 
-## 🎛️ Technical Details
+- **`src/main.rs`**: インタラクティブコマンドラインインターフェース
+- **`src/synth.rs`**: ポリフォニック音声管理を備えたメインシンセサイザー
+- **`src/engine.rs`**: AdditiveとFM合成エンジン
+- **`src/audio.rs`**: cpalを使用したリアルタイム音声出力
 
-### Polyphonic Voice Management
-- Each note is managed as a separate `Voice` instance
-- Automatic note-off after specified duration
-- Real-time voice allocation and deallocation
+## 🎛️ 技術詳細
 
-### Synthesis Engines
-- **Additive**: 64 harmonics with individual amplitude control
-- **FM**: 6 operators with frequency ratios and feedback
-- **Blending**: Smooth crossfading between engines
+### ポリフォニック音声管理
+- 各音は個別の`Voice`インスタンスとして管理
+- 指定時間後の自動ノートオフ
+- リアルタイム音声割り当てと解放
 
-### Audio Processing
-- Real-time sample generation at 48kHz
-- Support for multiple audio formats
-- Low-latency audio output
+### 合成エンジン
+- **Additive**: 個別振幅制御を備えた64個の倍音
+- **FM**: 周波数比とフィードバックを備えた6個のオペレーター
+- **Blending**: エンジン間のスムーズなクロスフェード
 
-## 🔧 Development
+### 音声処理
+- 48kHzでのリアルタイムサンプル生成
+- 複数の音声形式をサポート
+- 低レイテンシー音声出力
 
-### Building
+## 🔧 開発
+
+### ビルド
 ```bash
 cargo build
 ```
 
-### Running Tests
+### テスト実行
 ```bash
 cargo test
 ```
 
-### Code Structure
+### コード構造
 ```
 src/
-├── main.rs      # Entry point and CLI
-├── synth.rs     # Synthesizer core
-├── engine.rs    # Synthesis engines
-└── audio.rs     # Audio output
+├── main.rs      # エントリーポイントとCLI
+├── synth.rs     # シンセサイザーコア
+├── engine.rs    # 合成エンジン
+└── audio.rs     # 音声出力
 ```
 
-## 🎵 Future Enhancements
+## 🎵 今後の拡張予定
 
-- MIDI input support
-- GUI interface
-- Audio effects (reverb, delay, chorus)
-- Preset management
-- Score playback
-- MIDI file support
+- MIDI入力サポート
+- GUIインターフェース
+- 音声エフェクト（リバーブ、ディレイ、コーラス）
+- プリセット管理
+- スコア再生
+- MIDIファイルサポート
 
-## 📝 License
+## 📝 ライセンス
 
-This project is open source and available under the MIT License.
+このプロジェクトはオープンソースで、MITライセンスの下で利用可能です。
