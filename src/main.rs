@@ -64,10 +64,13 @@ fn test_synthesizer(synth: &mut synth::Synthesizer) {
 
 fn interactive_control(synth: Arc<Mutex<synth::Synthesizer>>, _audio: &mut audio::AudioOutput) {
     println!("\n🎮 インタラクティブ制御:");
-    println!("'n' + Enter で中央のC音を再生");
+    println!("'c' + Enter で中央のC音を再生");
     println!("'e' + Enter でE音を再生");
     println!("'g' + Enter でG音を再生");
-    println!("'c' + Enter で高いC音を再生");
+    println!("'d' + Enter でD音を再生");
+    println!("'f' + Enter でF音を再生");
+    println!("'a' + Enter でA音を再生");
+    println!("'b' + Enter でB音を再生");
     println!("'s' + Enter で全ての音を停止");
     println!("'q' + Enter で終了");
     println!("'1-9' + Enter でブレンド比率変更 (1=Additive, 9=FM)");
@@ -76,10 +79,15 @@ fn interactive_control(synth: Arc<Mutex<synth::Synthesizer>>, _audio: &mut audio
     println!("'p' + Enter でアクティブな音を表示");
     println!("\n⏱️  カスタム持続時間:");
     println!("'C <秒数>' で中央のC音を指定時間再生 (例: 'C 2.5')");
+    println!("'D <秒数>' でD音を指定時間再生 (例: 'D 1.8')");
     println!("'E <秒数>' でE音を指定時間再生 (例: 'E 1.8')");
+    println!("'F <秒数>' でF音を指定時間再生 (例: 'F 0.3')");
     println!("'G <秒数>' でG音を指定時間再生 (例: 'G 0.3')");
+    println!("'A <秒数>' でA音を指定時間再生 (例: 'A 4.2')");
+    println!("'B <秒数>' でB音を指定時間再生 (例: 'B 4.2')");
     println!("'H <秒数>' で高いC音を指定時間再生 (例: 'H 4.2')");
     println!("'CHORD <秒数>' でC-E-G和音を指定時間再生 (例: 'CHORD 5.0')");
+    println!("'SCALE <秒数>' でC-D-E-F-G-A-B-C音階を指定時間再生 (例: 'SCALE 8.0')");
     
     loop {
         print!("> ");
@@ -99,13 +107,29 @@ fn interactive_control(synth: Arc<Mutex<synth::Synthesizer>>, _audio: &mut audio
                             synth.note_on_with_duration(60, 0.8, duration);
                             println!("🎵 Note ON: Middle C (60) for {:.1} seconds", duration);
                         }
+                        "D" => {
+                            synth.note_on_with_duration(62, 0.75, duration);
+                            println!("🎵 Note ON: D (62) for {:.1} seconds", duration);
+                        }
                         "E" => {
                             synth.note_on_with_duration(64, 0.7, duration);
                             println!("🎵 Note ON: E (64) for {:.1} seconds", duration);
                         }
+                        "F" => {
+                            synth.note_on_with_duration(65, 0.65, duration);
+                            println!("🎵 Note ON: F (65) for {:.1} seconds", duration);
+                        }
                         "G" => {
                             synth.note_on_with_duration(67, 0.6, duration);
                             println!("🎵 Note ON: G (67) for {:.1} seconds", duration);
+                        }
+                        "A" => {
+                            synth.note_on_with_duration(69, 0.55, duration);
+                            println!("🎵 Note ON: A (69) for {:.1} seconds", duration);
+                        }
+                        "B" => {
+                            synth.note_on_with_duration(71, 0.5, duration);
+                            println!("🎵 Note ON: B (71) for {:.1} seconds", duration);
                         }
                         "H" => {
                             synth.note_on_with_duration(72, 0.5, duration);
@@ -116,6 +140,14 @@ fn interactive_control(synth: Arc<Mutex<synth::Synthesizer>>, _audio: &mut audio
                             synth.note_on_with_duration(64, 0.7, duration);
                             synth.note_on_with_duration(67, 0.6, duration);
                             println!("🎵 Chord ON: C-E-G for {:.1} seconds", duration);
+                        }
+                        "SCALE" => {
+                            let notes = [60, 62, 64, 65, 67, 69, 71, 72]; // C-D-E-F-G-A-B-C
+                            let velocities = [0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.5];
+                            for (note, velocity) in notes.iter().zip(velocities.iter()) {
+                                synth.note_on_with_duration(*note, *velocity, duration);
+                            }
+                            println!("🎵 Scale ON: C-D-E-F-G-A-B-C for {:.1} seconds", duration);
                         }
                         _ => {
                             println!("❓ Unknown note: {}", note);
@@ -133,25 +165,40 @@ fn interactive_control(synth: Arc<Mutex<synth::Synthesizer>>, _audio: &mut audio
         }
         
         match input {
-            "n" => {
+            "c" => {
                 let mut synth = synth.lock().unwrap();
                 synth.note_on(60, 0.8); // Middle C
                 println!("🎵 Note ON: Middle C (60)");
+            }
+            "d" => {
+                let mut synth = synth.lock().unwrap();
+                synth.note_on(62, 0.75); // D
+                println!("🎵 Note ON: D (62)");
             }
             "e" => {
                 let mut synth = synth.lock().unwrap();
                 synth.note_on(64, 0.7); // E
                 println!("🎵 Note ON: E (64)");
             }
+            "f" => {
+                let mut synth = synth.lock().unwrap();
+                synth.note_on(65, 0.65); // F
+                println!("🎵 Note ON: F (65)");
+            }
             "g" => {
                 let mut synth = synth.lock().unwrap();
                 synth.note_on(67, 0.6); // G
                 println!("🎵 Note ON: G (67)");
             }
-            "c" => {
+            "a" => {
                 let mut synth = synth.lock().unwrap();
-                synth.note_on(72, 0.5); // High C
-                println!("🎵 Note ON: High C (72)");
+                synth.note_on(69, 0.55); // A
+                println!("🎵 Note ON: A (69)");
+            }
+            "b" => {
+                let mut synth = synth.lock().unwrap();
+                synth.note_on(71, 0.5); // B
+                println!("🎵 Note ON: B (71)");
             }
             "s" => {
                 let mut synth = synth.lock().unwrap();
@@ -184,7 +231,7 @@ fn interactive_control(synth: Arc<Mutex<synth::Synthesizer>>, _audio: &mut audio
                 synth.set_blend(blend);
                 println!("🎛️  Blend set to: {:.2}", blend);
             }
-            "a" => {
+            "env" => {
                 let mut synth = synth.lock().unwrap();
                 synth.set_attack(0.1);
                 synth.set_decay(0.2);
@@ -192,14 +239,14 @@ fn interactive_control(synth: Arc<Mutex<synth::Synthesizer>>, _audio: &mut audio
                 synth.set_release(0.3);
                 println!("🎚️  Envelope adjusted");
             }
-            "f" => {
+            "filter" => {
                 let mut synth = synth.lock().unwrap();
                 synth.set_cutoff(0.5);
                 synth.set_resonance(0.3);
                 println!("🔊 Filter adjusted");
             }
             _ => {
-                println!("❓ Unknown command. Type 'n', 'e', 'g', 'c', 's', 'p', 'q', '1-9', 'a', 'f', or custom duration like 'C 2.5'");
+                println!("❓ Unknown command. Type 'c', 'd', 'e', 'f', 'g', 'a', 'b', 's', 'p', 'q', '1-9', 'env', 'filter', or custom duration like 'C 2.5'");
             }
         }
     }
